@@ -4,6 +4,11 @@ import torch
 import numpy
 
 class model_optimizer_checkpointer:
+    """
+    Stores model and optimizer `state_dict` after every epoch, and best model when criterion improves.
+    """
+
+
     CHECKPOINT_FMT = "%s_epoch%d_%s.pth"
     BEST_CHECKPOINT_FMT = "%s_epoch%d_%s_best.pth"
 
