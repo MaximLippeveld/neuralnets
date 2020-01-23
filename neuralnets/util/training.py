@@ -4,8 +4,8 @@ import torch
 import numpy
 
 class model_optimizer_checkpointer:
-    CHECKPOINT_FMT = "%d_epoch%d_%s.pth"
-    BEST_CHECKPOINT_FMT = "%d_epoch%d_%s_best.pth"
+    CHECKPOINT_FMT = "%s_epoch%d_%s.pth"
+    BEST_CHECKPOINT_FMT = "%s_epoch%d_%s_best.pth"
 
     def __init__(self, output_dir, goal="maximize"):
         self.output_dir = output_dir
