@@ -2,7 +2,35 @@ from torch.utils.data import Dataset
 import torch
 from torchvision import transforms
 from torchvision.transforms import functional
-import numpy as np
+import numpy
+from ciflmdb.lmdb import ciflmdb
+from math import ceil, floor
+
+
+def centercrop(width, height, image):
+    spill = (
+        max(0, (image.shape[1] - width)/2.), 
+        max(0, (image.shape[2] - height)/2.)
+    )
+
+    return image[
+        :,
+        int(floor(spill[0])): -int(ceil(spill[0])) if spill[0] > 0 else None,
+        int(floor(spill[1])): -int(ceil(spill[1])) if spill[1] > 0 else None
+    ]
+
+def centerpad(width, height, image):
+    pad = (width-image.shape[1])/2., (height-image.shape[2])/2.
+
+    tmp_im = numpy.zeros((image.shape[0], width, height), dtype=image.dtype)
+    tmp_im[
+        :,
+        int(floor(pad[0])): -int(ceil(pad[0])) if pad[0] > 0 else None,
+        int(floor(pad[1])): -int(ceil(pad[1])) if pad[1] > 0 else None
+    ] = image
+
+    return tmp_im
+
 
 class LMDBDataset(Dataset):
     """
@@ -66,7 +94,7 @@ class LMDBDataset(Dataset):
         return self.__image_shape
     @property
     def dtype(self):
-        return np.float32
+        return numpy.float32
 
     def _setup(self):
         """Private function used to setup databases. Required for multiprocessing setting.
@@ -81,7 +109,7 @@ class LMDBDataset(Dataset):
             
             i += len(db)
 
-        self.db_start_index = np.array(self.db_start_index)
+        self.db_start_index = numpy.array(self.db_start_index)
 
     def __getitem__(self, index):
         """Fetches instance from database based on index.
@@ -101,9 +129,9 @@ class LMDBDataset(Dataset):
         image, mask, label = db.get_image(index-start_idx, only_coi=True)
 
         if not self.raw_image:
-            image = np.multiply(
-                np.float32(image),
-                np.float32(mask)
+            image = numpy.multiply(
+                numpy.float32(image),
+                numpy.float32(mask)
             )
         else:
             image = np.float32(image)

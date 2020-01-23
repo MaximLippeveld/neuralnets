@@ -8,4 +8,4 @@ tifffile
 h5py
 scikit-image
 opencv-python
-lmdb
+-e git+https://github.com/MaximLippeveld/ciflmdb
