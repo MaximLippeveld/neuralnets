@@ -40,6 +40,7 @@ class model_optimizer_checkpointer:
             self.goal == "maximize" and criterion_value > self.optimal
             or self.goal != "maximize" and criterion_value < self.optimal
         ):
+            self.optimal = criterion_value
             if self.best_model_path is not None:
                 os.remove(os.path.join(self.output_dir, self.best_model_path))
             self.best_model_path = self.BEST_CHECKPOINT_FMT % (
