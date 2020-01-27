@@ -47,7 +47,7 @@ class LMDBDataset(Dataset):
         
         Keyword Arguments:
             channels {[int]} -- List of channels of interest. For example, in case you're only interested in channels R and G of an RGB image, supply `[0, 1]`. (default: {[]})
-            transform {callable} -- Function to apply on each instance in the database. (Applied on get.) (default: {None})
+            transform {callable} -- Function with signature `fun(image, mask)` to apply on each instance in the database. (Applied at `get`.) (default: {None})
         
         Raises:
             ValueError: Thrown when not all databases contain the same amount of channels.
@@ -135,6 +135,9 @@ class LMDBDataset(Dataset):
             )
         else:
             image = np.float32(image)
+        
+        if self.transform is not None:
+            image = self.transform(image, mask)
 
         width, height = image.shape[1], image.shape[2]
         size = self.size
@@ -143,9 +146,6 @@ class LMDBDataset(Dataset):
 
         if width < size or height < size:
             image = centerpad(size, size, image)
-
-        if self.transform is not None:
-            image = self.transform(image)
 
         return image, label-self._label_offset
 
