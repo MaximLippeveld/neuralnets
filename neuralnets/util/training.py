@@ -1,7 +1,61 @@
-import os, os.path
+import os, os.path, logging
 from datetime import datetime
 import torch
 import numpy
+from tensorboard import default, program
+
+
+class NonBlockingSummaryWriter:
+
+    def __init__(self, summarywriter):
+        self.summarywriter = summarywriter
+        self.manager = multiprocessing.Manager()
+        self.queue = manager.Queue()
+
+        self.consumer = multiprocessing.Process(
+            target=NonBlockingSummaryWriter._consumer_func, args=(summarywriter, self.queue), name="Reporting")
+        consumer.start()
+
+    def put(self, func_name, *args):
+        self.queue.put(func_name, args)
+
+    def __del__(self):
+        self.queue.put(None)
+        self.consumer.join()
+        self.summarywriter.close()
+
+    @staticmethod
+    def _consumer_func(writer, queue):
+        while True:
+            item = queue.get()
+            if item == None:
+                break
+
+            func, args = item
+            getattr(writer, func)(*args)
+
+            for arg in args:
+                del arg
+        
+class TensorBoardProcess(torch.multiprocessing.Process):
+
+    def __init__(self, output, port=6006):
+        super(TensorBoardProcess, self).__init__()
+        self.output = output
+        self.port = port
+
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        tb = program.TensorBoard(
+            default.get_plugins() + default.get_dynamic_plugins(), 
+            program.get_default_assets_zip_provider())
+        tb.configure(logdir = self.output, port = self.port)
+        log = logging.getLogger('tensorflow')
+        log.setLevel(logging.CRITICAL)
+        tb.main()
+
 
 class model_optimizer_checkpointer:
     """
