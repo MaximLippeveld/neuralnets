@@ -1,42 +1,53 @@
-import os, os.path, logging
+import os, os.path, logging, sys
 from datetime import datetime
 import torch
 import numpy
 from tensorboard import default, program
+from torch import multiprocessing
+from torch.utils.tensorboard import SummaryWriter
+import neuralnets.util.plotting
 
+def _consumer_func(output_dir, queue):
+    writer = SummaryWriter(os.path.join(output_dir, "tb"))
+    while True:
+        item = queue.get()
+        if item == None:
+            break
 
-class NonBlockingSummaryWriter:
+        case, func, args, kwargs = item
+        if case == "plotting":
+            fig = getattr(neuralnets.util.plotting, func)(*args)
+            writer.add_figure(figure=fig, **kwargs)
+        elif case == "writer":
+            getattr(writer, func)(*args, **kwargs)
 
-    def __init__(self, summarywriter):
-        self.summarywriter = summarywriter
-        self.manager = multiprocessing.Manager()
-        self.queue = manager.Queue()
+        for arg in args:
+            del arg
 
-        self.consumer = multiprocessing.Process(
-            target=NonBlockingSummaryWriter._consumer_func, args=(summarywriter, self.queue), name="Reporting")
-        consumer.start()
+    writer.close()
 
-    def put(self, func_name, *args):
-        self.queue.put(func_name, args)
+class SummaryWriterProcess(torch.multiprocessing.Process):
+
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+        self.queue = multiprocessing.Queue()
+
+        super(SummaryWriterProcess, self).__init__(
+            target=_consumer_func,
+            args=(output_dir, self.queue),
+            name="Reporting"
+        )
+
+        self.daemon=True
+
+    def put(self, case, func_name, *args, **kwargs):
+        self.queue.put((case, func_name, args, kwargs or {}))
 
     def __del__(self):
-        self.queue.put(None)
-        self.consumer.join()
-        self.summarywriter.close()
+        if self is not None:
+            self.queue.put(None)
+            self.join()
 
-    @staticmethod
-    def _consumer_func(writer, queue):
-        while True:
-            item = queue.get()
-            if item == None:
-                break
-
-            func, args = item
-            getattr(writer, func)(*args)
-
-            for arg in args:
-                del arg
-        
 class TensorBoardProcess(torch.multiprocessing.Process):
 
     def __init__(self, output, port=6006):
