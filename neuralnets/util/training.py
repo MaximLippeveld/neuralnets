@@ -11,8 +11,6 @@ def _consumer_func(output_dir, queue):
     writer = SummaryWriter(os.path.join(output_dir, "tb"))
     while True:
         item = queue.get()
-        if item == None:
-            break
 
         case, func, args, kwargs = item
         if case == "plotting":
@@ -20,6 +18,8 @@ def _consumer_func(output_dir, queue):
             writer.add_figure(figure=fig, **kwargs)
         elif case == "writer":
             getattr(writer, func)(*args, **kwargs)
+        elif case == "stop":
+            break
 
         for arg in args:
             del arg
@@ -38,15 +38,8 @@ class SummaryWriterProcess(torch.multiprocessing.Process):
             name="Reporting"
         )
 
-        self.daemon=True
-
     def put(self, case, func_name, *args, **kwargs):
         self.queue.put((case, func_name, args, kwargs or {}))
-
-    def __del__(self):
-        if self is not None:
-            self.queue.put(None)
-            self.join()
 
 class TensorBoardProcess(torch.multiprocessing.Process):
 
