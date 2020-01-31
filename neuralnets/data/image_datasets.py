@@ -153,6 +153,3 @@ class LMDBDataset(Dataset):
 
     def __len__(self):
         return self.length
-
-    def __repr__(self):
-        return self.__class__.__name__ + ' (' + self.db_path + ')'        

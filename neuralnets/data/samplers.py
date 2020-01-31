@@ -4,9 +4,10 @@ import queue
 
 
 class _EternalShuffleQueue(queue.Queue):
-    def __init__(self, items):
+    def __init__(self, items, c):
         super(_EternalShuffleQueue, self).__init__()
         self.items = items
+        self.c = c
     
     def pop(self):
         if super().empty():
@@ -37,7 +38,7 @@ class BalancedBatchSampler(torch.utils.data.sampler.Sampler):
         targets = numpy.array(targets)
         for i in self.classes:
             # get all indices for class i
-            self.idx_per_class[i] = _EternalShuffleQueue(numpy.nonzero(targets == i)[0])
+            self.idx_per_class[i] = _EternalShuffleQueue(numpy.nonzero(targets == i)[0], i)
 
     def __iter__(self):
         for _ in range(self.length):
