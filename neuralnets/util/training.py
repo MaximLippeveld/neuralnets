@@ -47,9 +47,7 @@ class TensorBoardProcess(torch.multiprocessing.Process):
         super(TensorBoardProcess, self).__init__()
         self.output = output
         self.port = port
-
         self.daemon = True
-        self.start()
 
     def run(self):
         tb = program.TensorBoard(
