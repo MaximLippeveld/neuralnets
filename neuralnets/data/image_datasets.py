@@ -139,7 +139,10 @@ class LMDBDataset(Dataset):
             image = numpy.float32(image)
         
         if self.transform is not None:
-            image = self.transform(image)
+            if self.pass_mask:
+                image = self.transform(image, mask)
+            else:
+                image = self.transform(image)
 
         width, height = image.shape[1], image.shape[2]
         size = self.size
