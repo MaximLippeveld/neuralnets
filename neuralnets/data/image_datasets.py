@@ -37,7 +37,7 @@ class LMDBDataset(Dataset):
     Dataset class for loading one or more lightning memory-mapped (LM) databases.
     """    
 
-    def __init__(self, db_paths, size, raw_image, channels=[], transform=None, pass_mask=True):
+    def __init__(self, db_paths, size, raw_image, channels=[], transform=None, pass_mask=True, **transform_args):
         """Initialize LMDB dataset for one ore more databases. Multiple databases are virtually concatenated, transparent for user.
         
         Arguments:
@@ -49,6 +49,7 @@ class LMDBDataset(Dataset):
         Keyword Arguments:
             channels {[int]} -- List of channels of interest. For example, in case you're only interested in channels R and G of an RGB image, supply `[0, 1]`. (default: {[]})
             transform {callable} -- Function with signature `fun(image, mask)` to apply on each instance in the database. (Applied at `get`.) (default: {None})
+            transform_args {args} -- Keyword arguments passed to transform function.
         
         Raises:
             ValueError: Thrown when not all databases contain the same amount of channels.
@@ -60,6 +61,7 @@ class LMDBDataset(Dataset):
         self.dbs = []
         self.db_start_index = []
         self.pass_mask = pass_mask
+        self.transform_args = transform_args
         
         self.length = 0
         tmp_channels = []
@@ -140,9 +142,9 @@ class LMDBDataset(Dataset):
         
         if self.transform is not None:
             if self.pass_mask:
-                image = self.transform(image, mask)
+                image = self.transform(image, mask, **self.transform_args)
             else:
-                image = self.transform(image)
+                image = self.transform(image, **self.transform_args)
 
         width, height = image.shape[1], image.shape[2]
         size = self.size

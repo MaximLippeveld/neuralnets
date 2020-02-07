@@ -13,7 +13,7 @@ def plot_grad_flow(named_parameters):
     max_grads= []
     layers = []
     for n, me, ma in named_parameters:
-        layers.append(n[6:])
+        layers.append(n)
         ave_grads.append(me)
         max_grads.append(ma)
     ax.bar(numpy.arange(len(max_grads))+0.5, max_grads, alpha=0.1, lw=1, color="c")
