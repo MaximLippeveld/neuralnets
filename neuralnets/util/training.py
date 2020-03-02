@@ -102,3 +102,6 @@ class model_optimizer_checkpointer:
             self.best_model_path = self.BEST_CHECKPOINT_FMT % (
                 type(model).__name__, epoch, datetime.today().isoformat(timespec="minutes"))
             torch.save(model.state_dict(), os.path.join(self.output_dir, self.best_model_path))
+
+        return self.optimal
+        
