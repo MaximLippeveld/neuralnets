@@ -110,10 +110,10 @@ class Model(torch.nn.Module):
             if phase == "train":
                 opt.zero_grad()
 
-            if i < 10 and phase != "test":
+            if i == 0 and phase != "test":
                 batch_grid = torchvision.utils.make_grid(batch[:, 0, numpy.newaxis, ...]).cpu()
-                swp.put("writer", "add_image", "batch/images_%s" % phase, batch_grid, global_step=epoch+i)
-                swp.put("writer", "add_histogram", "batch/image_histogram_%s" % phase, batch_grid, global_step=epoch+i)
+                swp.put("writer", "add_image", "batch/images_%s" % phase, batch_grid, global_step=epoch)
+                # swp.put("writer", "add_histogram", "batch/image_histogram_%s" % phase, batch_grid, global_step=epoch)
 
             batch, y = batch.cuda(), y.cuda()
             y_hat = self.model(batch)
@@ -131,7 +131,7 @@ class Model(torch.nn.Module):
             if phase == "train":
                 l.backward()
 
-                if i % 20 == 0:
+                if i % 50 == 0:
                     params = [
                         (n, p.grad.abs().mean().cpu(), p.grad.abs().max().cpu()) 
                         for n, p in self.model.named_parameters() if p.requires_grad and "bias" not in n
