@@ -6,25 +6,37 @@ from tensorboard import default, program
 from torch import multiprocessing
 from torch.utils.tensorboard import SummaryWriter
 import neuralnets.util.plotting
+import logging
 
 def _consumer_func(output_dir, queue):
-    writer = SummaryWriter(os.path.join(output_dir, "tb"))
-    while True:
-        item = queue.get()
+    logger = logging.getLogger(__name__)
+    logger.info("Consumer started")
 
-        case, func, args, kwargs = item
-        if case == "plotting":
-            fig = getattr(neuralnets.util.plotting, func)(*args)
-            writer.add_figure(figure=fig, **kwargs)
-        elif case == "writer":
-            getattr(writer, func)(*args, **kwargs)
-        elif case == "stop":
-            break
+    try:
+        writer = SummaryWriter(os.path.join(output_dir, "tb"))
+        logger.debug("Consumer created summarywriter")
+        while True:
+            logger.debug("Consumer waiting for queue item")
+            item = queue.get()
 
-        for arg in args:
-            del arg
+            case, func, args, kwargs = item
+            logger.debug("Processing item with case %s, func %s" % (case, str(func)))
+            if case == "plotting":
+                fig = getattr(neuralnets.util.plotting, func)(*args)
+                writer.add_figure(figure=fig, **kwargs)
+            elif case == "writer":
+                getattr(writer, func)(*args, **kwargs)
+            elif case == "stop":
+                logger.debug("Consumer received stop")
+                break
 
-    writer.close()
+            for arg in args:
+                del arg
+    except Exception as e:
+        logger.error("Consumer crashed", e)
+    finally:
+        logger.debug("Consumer closed writer")
+        writer.close()
 
 class SummaryWriterProcess(torch.multiprocessing.Process):
 
