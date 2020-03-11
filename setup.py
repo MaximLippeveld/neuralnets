@@ -3,6 +3,9 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("requirements.txt", "r") as fh:
+    reqs = fh.read().strip().split("\n")
+
 setuptools.setup(
     name="neuralnets",
     version="0.8",
@@ -19,16 +22,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=[
-        "augmentation",
-        "torch",
-        "torchvision",
-        "future",
-        "tensorboard",
-        "numpy",
-        "tifffile",
-        "h5py",
-        "scikit-image",
-        "opencv-python"
-    ]
+    install_requires=reqs
 )

@@ -8,4 +8,4 @@ tifffile
 h5py
 scikit-image
 opencv-python
--e git+https://github.com/MaximLippeveld/ciflmdb
+ciflmdb @ https://github.com/MaximLippeveld/ciflmdb/tarball/master
