@@ -4,6 +4,16 @@ import random
 import numpy as np
 import torch
 from skimage.color import label2rgb
+import os
+import shutil
+
+
+def make_output_dir(output_dir, rm_if_exists):
+    # settings
+    if os.path.isdir(output_dir):
+        if os.path.dirname(output_dir) == "tmp" or rm_if_exists:
+            shutil.rmtree(output_dir)
+    os.mkdir(output_dir)
 
 
 def sample_labeled_input(data, labels, input_shape):
