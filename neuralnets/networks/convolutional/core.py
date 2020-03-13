@@ -91,7 +91,7 @@ class Model(torch.nn.Module):
 
         return {"balacc": balacc}
 
-    def run(self, phase, epoch, dl, swp, opt, loss):
+    def run(self, phase, epoch, dl, swp, opt, loss, stop_at_batch=-1):
         if phase == "train":
             assert opt is not None, "Pass optimizer when training."
 
@@ -109,6 +109,9 @@ class Model(torch.nn.Module):
         for i, (batch, y) in enumerate(batch_tqdm):
             if phase == "train":
                 opt.zero_grad()
+
+            if i == stop_at_batch:
+                break
 
             if i == 0 and phase != "test":
                 batch_grid = torchvision.utils.make_grid(batch[:, 0, numpy.newaxis, ...]).cpu()
@@ -139,6 +142,8 @@ class Model(torch.nn.Module):
                     swp.put("plotting", "plot_grad_flow", params, tag="batch/gradient_flow", global_step=epoch*1000+i)
 
                 opt.step()
+
+            
 
         # return checkpoint metric
         return self.monitor()
