@@ -8,50 +8,46 @@ from torch.utils.tensorboard import SummaryWriter
 import neuralnets.util.plotting
 import logging
 
-def _consumer_func(output_dir, queue):
-    logger = logging.getLogger(__name__)
-    logger.info("Consumer started")
-
-    try:
-        writer = SummaryWriter(os.path.join(output_dir, "tb"))
-        logger.debug("Consumer created summarywriter")
-        while True:
-            logger.debug("Consumer waiting for queue item")
-            item = queue.get()
-
-            case, func, args, kwargs = item
-            logger.debug("Processing item with case %s, func %s" % (case, str(func)))
-            if case == "plotting":
-                fig = getattr(neuralnets.util.plotting, func)(*args)
-                writer.add_figure(figure=fig, **kwargs)
-            elif case == "writer":
-                getattr(writer, func)(*args, **kwargs)
-            elif case == "stop":
-                logger.debug("Consumer received stop")
-                break
-
-            for arg in args:
-                del arg
-    except Exception as e:
-        logger.error("Consumer crashed", e)
-    finally:
-        logger.debug("Consumer closed writer")
-        writer.close()
 
 class SummaryWriterProcess(torch.multiprocessing.Process):
 
     def __init__(self, output_dir):
+        super(SummaryWriterProcess, self).__init__(name="Reporting")
         self.output_dir = output_dir
         self.queue = multiprocessing.Queue()
+        self.queue_alive = True
 
-        super(SummaryWriterProcess, self).__init__(
-            target=_consumer_func,
-            args=(output_dir, self.queue),
-            name="Reporting"
-        )
+    def run(self):
+        logger = logging.getLogger(__name__)
+        logger.info("Consumer started")
+
+        try:
+            writer = SummaryWriter(os.path.join(self.output_dir, "tb"))
+            logger.debug("Consumer created summarywriter")
+            while True:
+                logger.debug("Consumer waiting for queue item")
+                item = self.queue.get()
+
+                case, func, args, kwargs = item
+                logger.debug("Processing item with case %s, func %s" % (case, str(func)))
+                if case == "plotting":
+                    fig = getattr(neuralnets.util.plotting, func)(*args)
+                    writer.add_figure(figure=fig, **kwargs)
+                elif case == "writer":
+                    getattr(writer, func)(*args, **kwargs)
+                elif case == "stop":
+                    logger.debug("Consumer received stop")
+                    break
+        except Exception as e:
+            logger.error("Consumer crashed (%s, %s)" % (case, str(func)), e)
+        finally:
+            logger.debug("Consumer closed writer")
+            writer.close()
+            self.queue_alive = False
 
     def put(self, case, func_name, *args, **kwargs):
-        self.queue.put((case, func_name, args, kwargs or {}))
+        if self.queue_alive:
+            self.queue.put((case, func_name, args, kwargs or {}))
 
 class TensorBoardProcess(torch.multiprocessing.Process):
 
