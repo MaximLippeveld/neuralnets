@@ -4,12 +4,13 @@ import torchvision.utils
 import numpy
 from neuralnets.util import meters
 import sklearn.metrics
+import pickle
+import logging
 
 
-class Model(torch.nn.Module):
+class Model:
     
     def __init__(self, num_classes, model):
-        super().__init__()
         self.model = model
         self.num_classes = num_classes
 
@@ -91,7 +92,9 @@ class Model(torch.nn.Module):
 
         return {"balacc": balacc}
 
-    def run(self, phase, epoch, dl, swp, opt, loss, stop_at_batch=-1):
+    def run(self, phase, epoch, dl, opt, loss, stop_at_batch=-1):
+        logger = logging.getLogger(__name__)
+
         if phase == "train":
             assert opt is not None, "Pass optimizer when training."
 
@@ -99,13 +102,15 @@ class Model(torch.nn.Module):
             meter.reset() 
 
         torch.autograd.set_grad_enabled(phase == "train")
+        torch.autograd.set_detect_anomaly(True)
 
         if phase=="train":
             self.model.train()
         else:
             self.model.eval()
 
-        batch_tqdm = tqdm(iter(dl), leave=False)
+        total = stop_at_batch if stop_at_batch > 0 else len(dl)
+        batch_tqdm = tqdm(iter(dl), total=total, leave=False)
         for i, (batch, y) in enumerate(batch_tqdm):
             if phase == "train":
                 opt.zero_grad()
@@ -113,16 +118,23 @@ class Model(torch.nn.Module):
             if i == stop_at_batch:
                 break
 
-            if i == 0 and phase != "test":
-                batch_grid = torchvision.utils.make_grid(batch[:, 0, numpy.newaxis, ...]).cpu()
-                swp.put("writer", "add_image", "batch/images_%s" % phase, batch_grid, global_step=epoch)
-                # swp.put("writer", "add_histogram", "batch/image_histogram_%s" % phase, batch_grid, global_step=epoch)
-
             batch, y = batch.cuda(), y.cuda()
+
+            if torch.isnan(y).any():
+                raise ValueError("something went wrong in y (label), phase %s" % phase, y)
+            if torch.isnan(batch).any():
+                raise ValueError("something went wrong in input batch, phase %s" % phase, batch)
+            
             y_hat = self.model(batch)
+
+            if torch.isnan(y_hat).any():
+                logger.debug(torch.cuda.memory_stats())
+                raise ValueError("something went wrong in forward, phase %s" % phase, y_hat)
 
             # compute metrics
             l = loss(y_hat, y)
+            if torch.isnan(l).any():
+                raise ValueError("something went wrong in loss, phase %s" % phase, l)
 
             y_true = y.detach().cpu().numpy()
             y_pred = y_hat.detach().cpu().numpy().argmax(axis=1)
@@ -133,17 +145,7 @@ class Model(torch.nn.Module):
             # step
             if phase == "train":
                 l.backward()
-
-                if i % 50 == 0:
-                    params = [
-                        (n, p.grad.abs().mean().cpu(), p.grad.abs().max().cpu()) 
-                        for n, p in self.model.named_parameters() if p.requires_grad and "bias" not in n
-                    ]
-                    swp.put("plotting", "plot_grad_flow", params, tag="batch/gradient_flow", global_step=epoch*1000+i)
-
                 opt.step()
-
-            
 
         # return checkpoint metric
         return self.monitor()
