@@ -19,7 +19,7 @@ class SummaryWriterProcess(torch.multiprocessing.Process):
 
     def run(self):
         logger = logging.getLogger(__name__)
-        logger.info("Consumer started")
+        logger.debug("Consumer started")
 
         try:
             writer = SummaryWriter(os.path.join(self.output_dir, "tb"))
@@ -33,11 +33,18 @@ class SummaryWriterProcess(torch.multiprocessing.Process):
                 if case == "plotting":
                     fig = getattr(neuralnets.util.plotting, func)(*args)
                     writer.add_figure(figure=fig, **kwargs)
+                    del fig
                 elif case == "writer":
                     getattr(writer, func)(*args, **kwargs)
                 elif case == "stop":
                     logger.debug("Consumer received stop")
                     break
+
+                for arg in args:
+                    del arg
+                for k,arg in kwargs.items():
+                    del arg
+
         except Exception as e:
             logger.error("Consumer crashed (%s, %s)" % (case, str(func)), e)
         finally:
