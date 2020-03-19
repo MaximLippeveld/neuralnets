@@ -119,22 +119,10 @@ class Model:
                 break
 
             batch, y = batch.cuda(), y.cuda()
-
-            if torch.isnan(y).any():
-                raise ValueError("something went wrong in y (label), phase %s" % phase, y)
-            if torch.isnan(batch).any():
-                raise ValueError("something went wrong in input batch, phase %s" % phase, batch)
-            
             y_hat = self.model(batch)
-
-            if torch.isnan(y_hat).any():
-                logger.debug(torch.cuda.memory_stats())
-                raise ValueError("something went wrong in forward, phase %s" % phase, y_hat)
 
             # compute metrics
             l = loss(y_hat, y)
-            if torch.isnan(l).any():
-                raise ValueError("something went wrong in loss, phase %s" % phase, l)
 
             y_true = y.detach().cpu().numpy()
             y_pred = y_hat.detach().cpu().numpy().argmax(axis=1)
