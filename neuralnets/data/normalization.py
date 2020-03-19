@@ -2,7 +2,7 @@ import numpy
 
 def channel_minmax_scale(x, m=None, post_norm="zero"):
 
-    if not post_norm in ["zero", "mean", "no"]:
+    if not post_norm in ["zero", "mean", "no", "clip"]:
         raise ValueError("%s not recognized." % post_norm)
 
     if m is None:
@@ -28,6 +28,8 @@ def channel_minmax_scale(x, m=None, post_norm="zero"):
 
     if numpy.isnan(normed).any():
         raise ValueError("normed contains nan")
+    if numpy.isinf(normed).any():
+        raise ValueError("normed contains inf")
 
     if m is not None:
         if post_norm == "mean":
@@ -40,5 +42,7 @@ def channel_minmax_scale(x, m=None, post_norm="zero"):
                         normed[i][~m[i]] = me
         elif post_norm == "zero":
             normed[~m[i]] = 0.0
+        elif post_norm == "clip":
+            normed = numpy.clip(normed, 0, 1)
 
     return normed
