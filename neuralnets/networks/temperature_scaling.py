@@ -32,14 +32,14 @@ class ModelWithTemperature(nn.Module):
         return logits / temperature
 
     # This function probably should live outside of this class, but whatever
-    def set_temperature(self, valid_loader):
+    def set_temperature(self, valid_loader, weights=None):
         """
         Tune the tempearature of the model (using the validation set).
         We're going to set it to optimize NLL.
         valid_loader (DataLoader): validation set loader
         """
         self.cuda()
-        nll_criterion = nn.CrossEntropyLoss().cuda()
+        nll_criterion = nn.CrossEntropyLoss(weight=weights).cuda()
         ece_criterion = _ECELoss().cuda()
 
         # First: collect all the logits and labels for the validation set
