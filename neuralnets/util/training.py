@@ -7,6 +7,7 @@ from torch import multiprocessing
 from torch.utils.tensorboard import SummaryWriter
 import neuralnets.util.plotting
 import logging
+from joblib import dump
 
 
 class SummaryWriterProcess(torch.multiprocessing.Process):
@@ -82,6 +83,7 @@ class model_optimizer_checkpointer:
 
     CHECKPOINT_FMT = "%s_epoch%d_%s.pth"
     BEST_CHECKPOINT_FMT = "%s_epoch%d_%s_best.pth"
+    BEST_PREDICTIONS_FMT = "best_predictions.joblib"
 
     def __init__(self, output_dir, goal="maximize"):
         self.output_dir = output_dir
@@ -119,4 +121,12 @@ class model_optimizer_checkpointer:
             torch.save(model.state_dict(), os.path.join(self.output_dir, self.best_model_path))
 
         return self.optimal
-        
+
+    def restore_best_model(self, model):
+        if self.best_model_path:
+            model.load_state_dict(torch.load(self.best_model_path))
+        else:
+            raise ValueError("Best model path isn't set")
+
+    def save_predictions(self, predictions):
+        dump(predictions, os.path.join(self.output_dir, self.BEST_PREDICTIONS_FMT)) 
