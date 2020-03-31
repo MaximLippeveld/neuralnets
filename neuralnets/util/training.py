@@ -128,5 +128,7 @@ class model_optimizer_checkpointer:
         else:
             raise ValueError("Best model path isn't set")
 
+        return model
+
     def save_predictions(self, predictions):
         dump(predictions, os.path.join(self.output_dir, self.BEST_PREDICTIONS_FMT)) 
