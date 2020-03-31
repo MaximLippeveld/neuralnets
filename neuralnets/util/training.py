@@ -124,7 +124,7 @@ class model_optimizer_checkpointer:
 
     def restore_best_model(self, model):
         if self.best_model_path:
-            model.load_state_dict(torch.load(self.best_model_path))
+            model.load_state_dict(torch.load(os.path.join(self.output_dir, self.best_model_path)))
         else:
             raise ValueError("Best model path isn't set")
 
