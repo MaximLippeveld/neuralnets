@@ -146,13 +146,13 @@ class LMDBDataset(Dataset):
             else:
                 image = self.transform(image, **self.transform_args)
 
-        width, height = image.shape[1], image.shape[2]
-        size = self.size
-        if width > size or height > size:
-            image = centercrop(size, size, image)
+        # width, height = image.shape[1], image.shape[2]
+        # size = self.size
+        # if width > size or height > size:
+        #     image = centercrop(size, size, image)
 
-        if width < size or height < size:
-            image = centerpad(size, size, image)
+        # if width < size or height < size:
+        #     image = centerpad(size, size, image)
 
         return image, label-self._label_offset
 
