@@ -37,7 +37,7 @@ class LMDBDataset(Dataset):
     Dataset class for loading one or more lightning memory-mapped (LM) databases.
     """    
 
-    def __init__(self, db_paths, size, raw_image, channels=[], transform=None, pass_mask=True, **transform_args):
+    def __init__(self, db_paths, size, raw_image, channels=[], transform=None, pass_mask=True):
         """Initialize LMDB dataset for one ore more databases. Multiple databases are virtually concatenated, transparent for user.
         
         Arguments:
@@ -59,7 +59,6 @@ class LMDBDataset(Dataset):
         self.transform = transform
         self.raw_image = raw_image
         self.pass_mask = pass_mask
-        self.transform_args = transform_args
 
         self.db = multidbwrapper(db_paths)
         self.targets = self.db.targets
@@ -73,6 +72,8 @@ class LMDBDataset(Dataset):
     def image_shape(self):
         return self.__image_shape
 
+    def set_transform_args(self, **transform_args):
+        self.transform_args = transform_args
 
     def __getitem__(self, index):
         """Fetches instance from database based on index.
