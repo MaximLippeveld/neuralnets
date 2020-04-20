@@ -1,6 +1,7 @@
 import torch
 import numpy
 import queue
+import math
 
 
 class _EternalShuffleQueue(queue.Queue):
@@ -31,8 +32,12 @@ class BalancedBatchSampler(torch.utils.data.sampler.Sampler):
             batch_size {int} -- Batch size.
         """
         self.classes = numpy.unique(targets)
-        self.length = int(numpy.ceil(len(targets) / batch_size))
         self.batch_size = batch_size
+
+        # Note on length computation. In each batch we have on average batch_size/num_classes of instances per class.
+        # In order to see each instance of the majority class once, we have to generate num_instances_major/(batch_size/num_classes) batches.
+        # Since all other classes have less instances, we will have seen all of them with this number of batches.
+        self.length = math.ceil(int(max(numpy.unique(targets, return_counts=True)[1])/(batch_size/len(self.classes))))
 
         self.idx_per_class = {}
         targets = numpy.array(targets)
